@@ -11,7 +11,7 @@ from tensorflow import keras
 from keras.utils import get_file
 dataset_dir=pathlib.Path("dataset/Priora_data/")
 
-sound_count = len(list(dataset_dir.glob("*/*.mp3")))
+sound_count = len(list(dataset_dir.glob("*/*.wav")))
 print(f"Всего файлов: {sound_count}")
 batch_size=32
 train_ds = tf.keras.utils.audio_dataset_from_directory(
@@ -35,54 +35,25 @@ AUTOTUNE = tf.data.AUTOTUNE
 train_ds = train_ds.cache().shuffle(1000).prefetch(buffer_size=AUTOTUNE)
 validation_ds = validation_ds.cache().shuffle(1000).prefetch(buffer_size=AUTOTUNE)
 
-num_classes = len(class_names)
-model = Sequential()
-model.add(keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=(128, 128, 3)))  # Замените размер и количество каналов на ваши данные
-model.add(keras.layers.MaxPooling2D((2, 2)))
-model.add(keras.layers.Conv2D(64, (3, 3), activation='relu'))
+input_shape1=(32,44100,2)
+model = keras.models.Sequential()
+
+# Добавьте слои для обработки аудиоданных
+# Например, можно использовать сверточные и рекуррентные слои
+model.add(keras.layers.Conv2D(16, (1, 100), activation='relu', input_shape=input_shape1))
+model.add(keras.layers.MaxPooling2D((4, 4)))
+model.add(keras.layers.Conv2D(64, (1, 100), activation='relu'))
 model.add(keras.layers.MaxPooling2D((2, 2)))
 model.add(keras.layers.Flatten())
-model.add(keras.layers.Dense(64, activation='relu'))
-model.add(keras.layers.Dense(2, activation='softmax'))  # 2 класса для бинарной классификации, замените на количество классов в вашей задаче
+model.add(keras.layers.Dense(64,input_shape=(input_shape1,) ,activation='relu'))
+
+# Добавьте выходной слой для классификации (зависит от задачи)
+# Например, для задачи классификации звуковых классов
+num_classes = 10
+model.add(keras.layers.Dense(num_classes, activation='softmax'))
 
 model.compile(
 	optimizer='adam',
 	loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
 	metrics=['accuracy'])
-model.build()
 model.summary()
-
-epochs = 10
-history = model.fit(
-	train_ds,
-	validation_data=validation_ds,
-	epochs=epochs)
-
-# visualize training and validation results
-acc = history.history['accuracy']
-val_acc = history.history['val_accuracy']
-
-loss = history.history['loss']
-val_loss = history.history['val_loss']
-
-epochs_range = range(epochs)
-
-plt.figure(figsize=(8, 8))
-plt.subplot(1, 2, 1)
-plt.plot(epochs_range, acc, label='Training Accuracy')
-plt.plot(epochs_range, val_acc, label='Validation Accuracy')
-plt.legend(loc='lower right')
-plt.title('Training and Validation Accuracy')
-
-plt.subplot(1, 2, 2)
-plt.plot(epochs_range, loss, label='Training Loss')
-plt.plot(epochs_range, val_loss, label='Validation Loss')
-plt.legend(loc='upper right')
-plt.title('Training and Validation Loss')
-plt.show()
-
-
-
-
-
-
